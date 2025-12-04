@@ -13,10 +13,27 @@ const cors = require('cors');
 const authRoutes = require("./routes/auth");
 const requireAuth = require("./middleware/requireAuth");
 
+const defaultCorsOrigins = [
+    "http://localhost:3000",
+    "http://localhost:3001",
+    "https://zerodha-clone-kappa-sage.vercel.app"
+];
+const envCorsOrigins = (process.env.CORS_ORIGINS || "")
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
+const corsWhitelist = [...new Set([...defaultCorsOrigins, ...envCorsOrigins])];
+
 app.use(cors({
-    origin: ["http://localhost:3000", "http://localhost:3001"],
+    origin: (origin, callback) => {
+        if (!origin || corsWhitelist.includes(origin)) {
+            return callback(null, true);
+        }
+        callback(new Error(`Origin ${origin} not allowed by CORS`));
+    },
     methods: ["GET", "POST", "PUT", "DELETE"],
-    credentials: true
+    credentials: true,
+    optionsSuccessStatus: 204
 }));
 app.use(bodyParser.json());
 app.use("/auth", authRoutes);
